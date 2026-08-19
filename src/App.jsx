@@ -48,7 +48,7 @@ function SplashPage({ onReady }) {
         <circle cx="70" cy="70" r="68" fill="none" stroke="#e8e8e8" strokeWidth="2" />
       </svg>
       <p style={{ marginTop:24, fontSize:26, fontWeight:900, color:"#004B93", animation:"wordIn .7s 1.5s both" }}>
-        PEPSI
+        Company INC
       </p>
       <p style={{ marginTop:12, color:"#bbb", fontSize:12, animation:"wordIn .5s 2.2s both" }}>
         tap to continue
