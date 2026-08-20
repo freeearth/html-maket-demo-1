@@ -179,42 +179,73 @@ function OtpPage({ phone, onConfirm }) {
 
 /* ─── Page 4: Home ────────────────────────────────────────────── */
 function HomePage() {
-  // modal.type is the integration point with the admin panel:
-  // admin sends a type string → frontend renders the matching component
-  const [modal, setModal] = useState({ show:false, type:"default" });
+  // A queue of modals. Each Confirm advances to the next.
+  const [queue, setQueue] = useState([]);   // list of { title, body, cta }
+  const [index, setIndex] = useState(0);    // which modal is showing
+  const [show, setShow]   = useState(false);
 
-  // Home page renders first, then the modal appears on top of it
+  // Hardcoded fallback: 5 modals fired one after another
+  const fallbackQueue = [
+    { title:"Step 1", body:"Welcome to the app.",        cta:"Next" },
+    { title:"Step 2", body:"Please review the terms.",   cta:"Next" },
+    { title:"Step 3", body:"Enable notifications.",      cta:"Next" },
+    { title:"Step 4", body:"Complete your profile.",     cta:"Next" },
+    { title:"Step 5", body:"All set — you're ready!",    cta:"Finish" },
+  ];
+
   useEffect(() => {
-    const t = setTimeout(() => setModal(m => ({ ...m, show:true })), 400);
-    return () => clearTimeout(t);
+    let cancelled = false;
+
+    // Admin can return an array of modals; otherwise use the fallback list.
+    fetch("/api/modals")
+      .then(r => r.json())
+      .then(list => {
+        if (cancelled) return;
+        const q = Array.isArray(list) && list.length ? list : fallbackQueue;
+        setQueue(q);
+        setTimeout(() => !cancelled && setShow(true), 400);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setQueue(fallbackQueue);
+        setTimeout(() => !cancelled && setShow(true), 400);
+      });
+
+    return () => { cancelled = true; };
   }, []);
 
-  const modals = {
-    default: (
-      <>
-        <p style={{ textAlign:"center", marginBottom:20, fontSize:15 }}>Welcome! Confirm to continue.</p>
-        <div style={{ textAlign:"center" }}>
-          <button
-            onClick={() => setModal(m => ({ ...m, show:false }))}
-            style={{
-              background:"#007AFF", color:"white", border:"none",
-              padding:"10px 28px", borderRadius:8, fontSize:15, cursor:"pointer",
-            }}
-          >Confirm</button>
-        </div>
-      </>
-    ),
-    // Add new modal types here as admin panel grows:
-    // promo: <PromoModal />,
-    // notice: <NoticeModal />,
-    // survey: <SurveyModal />,
+  const next = () => {
+    if (index < queue.length - 1) {
+      setIndex(i => i + 1);   // show next modal
+    } else {
+      setShow(false);         // last one dismissed → done
+    }
   };
+
+  const btnStyle = {
+    background:"#007AFF", color:"white", border:"none",
+    padding:"10px 28px", borderRadius:8, fontSize:15, cursor:"pointer",
+  };
+
+  const current = queue[index];
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
       <div style={{ fontSize:48 }}>🏠</div>
       <h2 style={{ fontWeight:400, color:"#bbb", marginTop:8 }}>Home</h2>
-      {modal.show && <Modal backdrop="transparent" align="flex-end">{modals[modal.type]}</Modal>}
+
+      {show && current && (
+        <Modal backdrop="transparent" align="flex-end">
+          <p style={{ textAlign:"center", color:"#bbb", fontSize:11, marginBottom:6 }}>
+            {index + 1} / {queue.length}
+          </p>
+          {current.title && <p style={{ textAlign:"center", fontWeight:700, fontSize:18, marginBottom:8 }}>{current.title}</p>}
+          {current.body  && <p style={{ textAlign:"center", fontSize:14, marginBottom:20 }}>{current.body}</p>}
+          <div style={{ textAlign:"center" }}>
+            <button onClick={next} style={btnStyle}>{current.cta || "Confirm"}</button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
