@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 
 /* ─── Modal ───────────────────────────────────────────────────── */
-function Modal({ children }) {
+function Modal({ children, backdrop = "rgba(0,0,0,0.4)", align = "center" }) {
   return (
     <div style={{
       position:"fixed", inset:0,
-      background:"rgba(0,0,0,0.4)",
-      display:"flex", alignItems:"center", justifyContent:"center",
+      background:backdrop,
+      display:"flex", alignItems:align, justifyContent:"center",
+      padding: align === "center" ? 0 : "0 0 48px",
       zIndex:999,
     }}>
       <div style={{
@@ -74,9 +75,8 @@ function PhonePage({ onConfirm }) {
       <input
         type="tel"
         inputMode="numeric"
-        value={phone}
+        value={"+" + phone}
         onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
-        placeholder="+___ ___ ____"
         autoFocus
         style={{
           fontSize:24, letterSpacing:3, textAlign:"center",
@@ -100,9 +100,9 @@ function PhonePage({ onConfirm }) {
       {modal && (
         <Modal>
           <p style={{ textAlign:"center", color:"#888", fontSize:13, marginBottom:6 }}>Confirm number?</p>
-          <p style={{ textAlign:"center", fontWeight:700, fontSize:22, marginBottom:24 }}>{phone}</p>
+          <p style={{ textAlign:"center", fontWeight:700, fontSize:22, marginBottom:24 }}>{"+" + phone}</p>
           <div style={{ textAlign:"center" }}>
-            <span onClick={() => { setModal(false); onConfirm(phone); }} style={{
+            <span onClick={() => { setModal(false); onConfirm("+" + phone); }} style={{
               color:"#007AFF", fontSize:16, cursor:"pointer",
               textDecoration:"underline", userSelect:"none",
             }}>Confirm</span>
@@ -181,7 +181,13 @@ function OtpPage({ phone, onConfirm }) {
 function HomePage() {
   // modal.type is the integration point with the admin panel:
   // admin sends a type string → frontend renders the matching component
-  const [modal, setModal] = useState({ show:true, type:"default" });
+  const [modal, setModal] = useState({ show:false, type:"default" });
+
+  // Home page renders first, then the modal appears on top of it
+  useEffect(() => {
+    const t = setTimeout(() => setModal(m => ({ ...m, show:true })), 400);
+    return () => clearTimeout(t);
+  }, []);
 
   const modals = {
     default: (
@@ -208,7 +214,7 @@ function HomePage() {
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
       <div style={{ fontSize:48 }}>🏠</div>
       <h2 style={{ fontWeight:400, color:"#bbb", marginTop:8 }}>Home</h2>
-      {modal.show && <Modal>{modals[modal.type]}</Modal>}
+      {modal.show && <Modal backdrop="transparent" align="flex-end">{modals[modal.type]}</Modal>}
     </div>
   );
 }
